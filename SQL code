@@ -1,0 +1,313 @@
+select *
+from WalmartSales.dbo.WalmartSalesData
+
+
+--create time_of_day column 
+
+select Time, convert(nvarchar(20),Time,8)
+from WalmartSales.dbo.WalmartSalesData
+
+alter table WalmartSales.dbo.WalmartSalesData
+add date_time_converted nvarchar(20)
+
+update WalmartSales.dbo.WalmartSalesData
+set date_time_converted = convert(nvarchar(20),Time,8)
+
+select date_time_converted, (
+		case 
+			when date_time_converted between '00:00:00' and '12:00:00' then 'Morning'
+			when date_time_converted between '12:01:00' and '16:00:00' then 'Afternoon'
+			else 'Evening'
+			end
+			)
+from WalmartSales.dbo.WalmartSalesData
+
+alter table WalmartSales.dbo.WalmartSalesData
+add time_of_day nvarchar(20)
+
+update WalmartSales.dbo.WalmartSalesData
+set time_of_day = (
+		case 
+			when date_time_converted between '00:00:00' and '12:00:00' then 'Morning'
+			when date_time_converted between '12:01:00' and '16:00:00' then 'Afternoon'
+			else 'Evening'
+			end
+			)
+
+
+--create day_name column
+select Date, datename(WEEKDAY,Date)
+from WalmartSales.dbo.WalmartSalesData
+
+alter table WalmartSales.dbo.WalmartSalesData
+add day_name nvarchar(20)
+
+update WalmartSales.dbo.WalmartSalesData
+set day_name = datename(WEEKDAY,Date)
+
+-- create month_name column
+
+select Date, datename(MONTH,Date) as month_name
+from
+WalmartSales.dbo.WalmartSalesData
+
+alter table WalmartSales.dbo.WalmartSalesData
+add month_name nvarchar(20)
+
+update WalmartSales.dbo.WalmartSalesData
+set month_name = datename(MONTH,Date)
+
+
+----------------------------------------------------------------------EDA-----------------------------------------------------------------
+---------------------------------------------------------------Generic Questions----------------------------------------------------------
+
+
+select * 
+from WalmartSales.dbo.WalmartSalesData
+
+--1.How many unique cities does the data have?
+
+select distinct(City)
+from WalmartSales.dbo.WalmartSalesData
+
+--2. In which city is each branch?
+
+select Distinct(City),Branch
+from WalmartSales.dbo.WalmartSalesData
+group by  city,Branch
+order by Branch
+
+
+---------------------------------------------------------------Product question-----------------------------------------------------------
+
+
+select * 
+from WalmartSales.dbo.WalmartSalesData
+
+
+--1. How many unique product lines does the data have?
+
+select DISTINCT([Product line]) 
+from WalmartSales.dbo.WalmartSalesData
+
+--2. What is the most common payment method?
+
+select distinct(Payment),count(Payment) as Payment_method_amount
+from WalmartSales.dbo.WalmartSalesData
+group by Payment
+order by Payment_method_amount desc
+
+--3. What is the most selling product line?
+
+select [Product line], count([Product line]) as product_line_popularity
+from WalmartSales.dbo.WalmartSalesData
+group by [Product line]
+order by product_line_popularity desc
+
+--4. What is the total revenue by month?
+
+select month_name, sum(Total) as Revenue
+from WalmartSales.dbo.WalmartSalesData
+group by month_name 
+order by Revenue desc
+
+--5.What month had the largest COGS?
+
+select month_name,sum(cogs) cogs_amount
+from WalmartSales.dbo.WalmartSalesData
+group by month_name
+order by cogs_amount desc
+
+--6. What product line had the largest revenue?
+
+select [Product line], sum(Total) as T_prod_line_revenue
+from WalmartSales.dbo.WalmartSalesData
+group by [Product line]
+order by T_prod_line_revenue desc
+
+--7. What is the city with the largest revenue?
+
+select City, sum(Total) as T_revenue_by_City
+from WalmartSales.dbo.WalmartSalesData
+group by City
+order by T_revenue_by_City desc
+
+
+--8. What product line had the largest VAT? 
+
+select [Product line],avg([Tax 5%]) as avg_tax
+from WalmartSales.dbo.WalmartSalesData
+group by [Product line]
+order by avg_tax desc
+
+--9.Fetch each product line and add a column to those product line showing "Good", "Bad". Good if its greater than average sales
+
+
+
+--10.Which branch sold more products than average product sold?
+
+select Branch,sum(Quantity) as qty 
+from WalmartSales.dbo.WalmartSalesData
+group by Branch
+having sum(Quantity) > (select avg(Quantity) from WalmartSales.dbo.WalmartSalesData)
+
+--11.What is the most common product line by gender?
+
+select Gender,[Product line],count(Gender) as cnt
+from WalmartSales.dbo.WalmartSalesData
+group by Gender, [Product line]
+order by cnt desc
+
+--12.What is the average rating of each product line?
+
+select [Product line], round(avg(Rating),2) avg_rate
+from WalmartSales.dbo.WalmartSalesData
+group by [Product line]
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------SALES---------------------------------------------------------------------------
+
+
+select * 
+from WalmartSales.dbo.WalmartSalesData
+
+--1. Number of sales made in each time of the day per weekday
+select time_of_day, count(*) as spw
+from WalmartSales.dbo.WalmartSalesData
+where day_name = 'Saturday'
+group by time_of_day
+order by spw desc
+
+--2. Which of the customer types brings the most revenue?
+
+select [Customer type], sum(Total) as [Total revenue]
+from WalmartSales.dbo.WalmartSalesData
+group by [Customer type]
+order by [Total revenue] desc
+
+--3. Which city has the largest tax percent/ VAT (**Value Added Tax**)?
+select City,round(avg([Tax 5%]),2) as VAT
+from WalmartSales.dbo.WalmartSalesData
+group by City
+order by VAT desc
+
+--4. Which customer type pays the most in VAT?
+
+
+select [Customer type], round(avg([Tax 5%]),2) as vat
+from WalmartSales.dbo.WalmartSalesData
+group by [Customer type]
+order by vat desc
+
+------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------CUSTOMER-------------------------------------------------------------------
+select * 
+from WalmartSales.dbo.WalmartSalesData
+
+--1. How many unique customer types does the data have?
+
+select DISTINCT([Customer type])
+from WalmartSales.dbo.WalmartSalesData
+
+--2. How many unique payment methods does the data have?
+
+select distinct(Payment) 
+from WalmartSales.dbo.WalmartSalesData
+
+--3. What is the most common customer type?
+
+select [Customer type],count([Customer type]) AS counted_customer_type
+from WalmartSales.dbo.WalmartSalesData
+group by [Customer type] 
+order by counted_customer_type desc
+
+
+--4. Which customer type buys the most?
+
+select [Customer type],count([Customer type]) as cst_count
+from WalmartSales.dbo.WalmartSalesData
+group by [Customer type]
+order by cst_count desc
+
+--5. What is the gender of most of the customers?
+
+select Gender,count(Gender) as [Counted Gender]
+from WalmartSales.dbo.WalmartSalesData
+group by  Gender 
+order by [Counted Gender] desc
+
+
+--6. What is the gender distribution per branch?
+
+select Gender,count(Gender) as [Counted Gender]
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'A'
+group by  Gender 
+order by [Counted Gender] desc
+
+select Gender,count(Gender) as [Counted Gender]
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'B'
+group by  Gender 
+order by [Counted Gender] desc
+
+select Gender,count(Gender) as [Counted Gender]
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'C'
+group by  Gender 
+order by [Counted Gender] desc
+
+--7. Which time of the day do customers give most ratings?
+
+select time_of_day,round(AVG(Rating),2) [Avg Rating]
+from WalmartSales.dbo.WalmartSalesData
+group by time_of_day
+order by [Avg Rating] desc
+
+--8. Which time of the day do customers give most ratings per branch?
+
+select time_of_day,round(AVG(Rating),2) [Avg Rating]
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'A'
+group by time_of_day
+order by [Avg Rating] desc
+
+select time_of_day,round(AVG(Rating),2) [Avg Rating]
+from WalmartSales.dbo.WalmartSalesData
+WHERE Branch = 'B'
+group by time_of_day
+order by [Avg Rating] desc
+
+select time_of_day,round(AVG(Rating),2) [Avg Rating]
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'C'
+group by time_of_day
+order by [Avg Rating] desc
+
+--9. Which day of the week has the best avg ratings?
+select day_name,round(avg(Rating),2) as avg_rate
+from WalmartSales.dbo.WalmartSalesData
+group by day_name
+order by avg_rate desc
+
+--10. Which day of the week has the best average ratings per branch?
+
+select day_name,round(avg(Rating),2) as avg_rate
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'A'
+group by day_name
+order by avg_rate desc
+
+select day_name,round(avg(Rating),2) as avg_rate
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'B'
+group by day_name
+order by avg_rate desc
+
+select day_name,round(avg(Rating),2) as avg_rate
+from WalmartSales.dbo.WalmartSalesData
+where Branch = 'C'
+group by day_name
+order by avg_rate desc
+
